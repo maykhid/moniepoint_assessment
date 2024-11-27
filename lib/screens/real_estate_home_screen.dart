@@ -4,7 +4,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:moniepoint_assessment/res/images.dart';
-import 'package:moniepoint_assessment/widgets/app_text_field.dart';
 
 class RealEstateHomeScreen extends StatefulWidget {
   const RealEstateHomeScreen({super.key});
@@ -15,10 +14,13 @@ class RealEstateHomeScreen extends StatefulWidget {
 
 class _RealEstateHomeScreenState extends State<RealEstateHomeScreen>
     with TickerProviderStateMixin {
-  bool _visible = false;
-  late AnimationController _controller;
+  bool _isProfilePicVisible = false;
+  bool _isGreetTextVisible = false;
+  bool _isUpwardCountVisible = false;
 
-  late AnimationController _controller2;
+  late AnimationController _countUpController;
+
+  late AnimationController _modalController;
   late AnimationController _textController;
   late Animation<int> _animation;
   late Animation<int> _animation2;
@@ -33,18 +35,28 @@ class _RealEstateHomeScreenState extends State<RealEstateHomeScreen>
   @override
   void initState() {
     super.initState();
-    Timer(Durations.medium1, () {
-      setState(() {
-        _visible = true;
-      });
-    });
 
-    _controller = AnimationController(
+    _countUpController = AnimationController(
       vsync: this,
       duration: Durations.extralong4, // Animation duration
     );
 
-    _controller2 = AnimationController(
+    Timer(Durations.medium1, () {
+      setState(() {
+        _isProfilePicVisible = true;
+      });
+
+      Timer(Durations.long4, () {
+        setState(() {
+          _isGreetTextVisible = true;
+        });
+
+        // // Start the animation
+        // _countUpController.forward();
+      });
+    });
+
+    _modalController = AnimationController(
       vsync: this,
       duration: Durations.extralong4, // Animation duration
     );
@@ -54,13 +66,19 @@ class _RealEstateHomeScreenState extends State<RealEstateHomeScreen>
       duration: const Duration(milliseconds: 1500), // Animation duration
     );
 
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 1), // Start off-screen at the bottom
+      end: const Offset(0, 0), // End at the center
+    ).animate(
+        CurvedAnimation(parent: _modalController, curve: Curves.easeInOut));
+
     // Define a Tween to count from 0 to 2000
-    _animation = IntTween(begin: 100, end: 2212).animate(_controller)
+    _animation = IntTween(begin: 100, end: 2212).animate(_countUpController)
       ..addListener(() {
         setState(() {}); // Rebuild the UI with updated value
       });
 
-    _animation2 = IntTween(begin: 100, end: 1034).animate(_controller)
+    _animation2 = IntTween(begin: 100, end: 1034).animate(_countUpController)
       ..addListener(() {
         setState(() {}); // Rebuild the UI with updated value
       })
@@ -69,30 +87,45 @@ class _RealEstateHomeScreenState extends State<RealEstateHomeScreen>
           setState(() {
             _isModalVisible = true;
           });
-          _controller2.forward();
         }
       });
 
     _textAnimation = Tween<Offset>(
       begin: const Offset(0.0, 1.0), // Starts hidden (below)
       end: const Offset(0.0, 0.0), // Fully visible in place
-    ).animate(
-        CurvedAnimation(parent: _textController, curve: Curves.easeInOut));
+    ).animate(CurvedAnimation(parent: _textController, curve: Curves.easeInOut))
+      ..addStatusListener((s) {
+        if (s.isCompleted) {
+          Timer(Durations.long4, () {
+            setState(() {
+              _isModalVisible = true;
+            });
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 1), // Start off-screen at the bottom
-      end: const Offset(0, 0), // End at the center
-    ).animate(CurvedAnimation(parent: _controller2, curve: Curves.easeInOut));
+            Timer(Durations.long4, () {
+              setState(() {
+                _modalController.forward();
+              });
+            });
+          });
+        }
+      });
 
-    // Start the animation
-    _controller.forward();
-    _textController.forward();
+    Timer(Durations.long4, () {
+      _textController.forward().then((_) {
+        // Start the animation
+        _countUpController.forward();
+
+        setState(() {
+          _isUpwardCountVisible = true;
+        });
+      });
+    });
   }
 
   @override
   void dispose() {
-    _controller.dispose();
-    _controller2.dispose();
+    _countUpController.dispose();
+    _modalController.dispose();
     _textController.dispose();
     super.dispose();
   }
@@ -130,22 +163,15 @@ class _RealEstateHomeScreenState extends State<RealEstateHomeScreen>
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           // search
-                          Flexible(
-                            flex: 1,
-                            fit: FlexFit.loose,
-                            child: AppTextField(
-                              prefixIcon: const Icon(
-                                Icons.location_pin,
-                                color: Colors.grey,
-                              ),
-                              hintText: 'Saint Petersburg',
-                            ),
-                          ),
+                          const Flexible(
+                              flex: 1,
+                              fit: FlexFit.loose,
+                              child: AnimatedTextField()),
 
                           // profile pic
                           Flexible(
                             child: AnimatedScale(
-                              scale: _visible ? 1 : 0,
+                              scale: _isProfilePicVisible ? 1 : 0,
                               duration: Durations.extralong1,
                               curve: Curves.easeInOut,
                               child: const CircleAvatar(
@@ -161,7 +187,7 @@ class _RealEstateHomeScreenState extends State<RealEstateHomeScreen>
 
                       // hi, name
                       AnimatedOpacity(
-                        opacity: _visible ? 1 : 0,
+                        opacity: _isGreetTextVisible ? 1 : 0,
                         duration: Durations.extralong4,
                         child: const Text(
                           'Hi, Marina',
@@ -204,7 +230,7 @@ class _RealEstateHomeScreenState extends State<RealEstateHomeScreen>
                             // buy
                             Flexible(
                               child: AnimatedScale(
-                                scale: _visible ? 1 : 0,
+                                scale: _isUpwardCountVisible ? 1 : 0,
                                 duration: Durations.extralong4,
                                 child: Container(
                                   width: 170,
@@ -213,14 +239,30 @@ class _RealEstateHomeScreenState extends State<RealEstateHomeScreen>
                                     borderRadius: BorderRadius.circular(100),
                                   ),
                                   child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    // mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
+                                      const Gap(15),
+                                      const Text(
+                                        'BUY', // Display the animated number
+                                        style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w500),
+                                      ),
+                                      const Gap(30),
                                       Text(
                                         '${_animation2.value}', // Display the animated number
                                         style: const TextStyle(
                                             fontSize: 48,
                                             color: Colors.white,
                                             fontWeight: FontWeight.bold),
+                                      ),
+                                      const Text(
+                                        'offers', // Display the animated number
+                                        style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w500),
                                       ),
                                     ],
                                   ),
@@ -233,23 +275,38 @@ class _RealEstateHomeScreenState extends State<RealEstateHomeScreen>
                             // rent
                             Flexible(
                               child: AnimatedScale(
-                                scale: _visible ? 1 : 0,
+                                scale: _isUpwardCountVisible ? 1 : 0,
                                 duration: Durations.extralong4,
                                 child: Container(
                                   width: 170,
                                   decoration: BoxDecoration(
-                                    color: Colors.black,
+                                    color: Colors.white,
                                     borderRadius: BorderRadius.circular(20),
                                   ),
                                   child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
+                                      const Gap(15),
+                                      const Text(
+                                        'RENT',
+                                        style: TextStyle(
+                                            fontSize: 14,
+                                            color: Color(0xffC7BCAE),
+                                            fontWeight: FontWeight.w500),
+                                      ),
+                                      const Gap(30),
                                       Text(
                                         '${_animation.value}', // Display the animated number
                                         style: const TextStyle(
                                             fontSize: 48,
-                                            color: Colors.white,
+                                            color: Color(0xffC7BCAE),
                                             fontWeight: FontWeight.bold),
+                                      ),
+                                      const Text(
+                                        'offers',
+                                        style: TextStyle(
+                                            fontSize: 14,
+                                            color: Color(0xffC7BCAE),
+                                            fontWeight: FontWeight.w500),
                                       ),
                                     ],
                                   ),
@@ -310,14 +367,14 @@ class _RealEstateHomeScreenState extends State<RealEstateHomeScreen>
                                       children: [
                                         Flexible(
                                           child: _ImageContainer(
-                                            address: 'Ijegun., 8',
+                                            address: 'Yaba., 28',
                                             imageAsset: AppImages.portrait1,
                                           ),
                                         ),
                                         Gap(10),
                                         Flexible(
                                           child: _ImageContainer(
-                                            address: 'Ijegun., 8',
+                                            address: 'Macaulay Dr., 8',
                                             imageAsset: AppImages.portrait2,
                                           ),
                                         ),
@@ -341,6 +398,93 @@ class _RealEstateHomeScreenState extends State<RealEstateHomeScreen>
   }
 }
 
+class AnimatedTextField extends StatefulWidget {
+  const AnimatedTextField({super.key});
+
+  @override
+  State<AnimatedTextField> createState() => _AnimatedTextFieldState();
+}
+
+class _AnimatedTextFieldState extends State<AnimatedTextField>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _widthAnimation;
+  late Animation<double> _opacityAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
+
+    _widthAnimation = Tween<double>(begin: 50.0, end: 250.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+
+    _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Container(
+          height: 50,
+          width: _widthAnimation.value,
+          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.location_pin,
+                color: Color(0xffC7BCAE),
+                size: 18,
+              ),
+              if (_widthAnimation.value > 60) ...[
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Opacity(
+                    opacity: _opacityAnimation.value,
+                    child: const TextField(
+                      decoration: InputDecoration(
+                        hintText: 'Saint Petersburg',
+                        border: InputBorder.none,
+                        hintStyle: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xffC7BCAE),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _AnimatedWidthContainer extends StatefulWidget {
   const _AnimatedWidthContainer({
     required this.address,
@@ -351,7 +495,8 @@ class _AnimatedWidthContainer extends StatefulWidget {
   final bool hasMaxWidth;
 
   @override
-  State<_AnimatedWidthContainer> createState() => _AnimatedWidthContainerState();
+  State<_AnimatedWidthContainer> createState() =>
+      _AnimatedWidthContainerState();
 }
 
 class _AnimatedWidthContainerState extends State<_AnimatedWidthContainer>
@@ -369,7 +514,7 @@ class _AnimatedWidthContainerState extends State<_AnimatedWidthContainer>
       duration: const Duration(seconds: 1),
       vsync: this,
     )..addListener(() {
-        if (_widthAnimation.value > 350) {
+        if (_widthAnimation.value > 370) {
           _visible = true;
         }
       });
@@ -380,7 +525,7 @@ class _AnimatedWidthContainerState extends State<_AnimatedWidthContainer>
     );
 
     // Start the animation
-    Timer(const Duration(seconds: 1), () {
+    Timer(const Duration(milliseconds: 1500), () {
       _controller.forward();
     });
   }
@@ -437,7 +582,7 @@ class _AnimatedWidthContainerState extends State<_AnimatedWidthContainer>
                 padding: EdgeInsets.only(left: widget.hasMaxWidth ? 0 : 10.0),
                 child: AnimatedOpacity(
                     opacity: _visible ? 1 : 0,
-                    duration: Durations.extralong1,
+                    duration: Durations.extralong4,
                     child: Text(widget.address)),
               ),
             ],

@@ -19,7 +19,6 @@ class FindHousingScreen extends StatefulWidget {
 
 class _FindHousingScreenState extends State<FindHousingScreen> {
   bool _visible = false;
-  final bool _isFlagVisible = false;
 
   @override
   void initState() {
@@ -160,10 +159,9 @@ class _FindHousingScreenState extends State<FindHousingScreen> {
 }
 
 class _LocationFlag extends ConsumerStatefulWidget {
-  const _LocationFlag({required this.locationText, this.showLocation = true});
+  const _LocationFlag({required this.locationText});
 
   final String locationText;
-  final bool showLocation;
 
   @override
   ConsumerState<_LocationFlag> createState() => __LocationFlagState();
@@ -218,19 +216,7 @@ class CustomFAB extends ConsumerStatefulWidget {
 }
 
 class _CustomFABState extends ConsumerState<CustomFAB> {
-  bool _visible = false;
   bool _showModal = false;
-
-  @override
-  void initState() {
-    super.initState();
-    Timer(Durations.medium1, () {
-      setState(() {
-        _visible = true;
-      });
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -340,7 +326,6 @@ class __FloatingModalState extends ConsumerState<_FloatingModal> {
 
 class _FloatingModalListItem extends StatelessWidget {
   const _FloatingModalListItem({
-    super.key,
     required this.icon,
     required this.text,
     this.onTap,
